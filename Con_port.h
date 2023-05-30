@@ -12,18 +12,19 @@ extern "C"{
 /* HAL lib */
 #include "Platform.h"
 #if defined(USE_HAL)
+/* HAL Receive dat Enable */
+#define HAVEN_HAL_CONNECT_INIT
+void HAL_Connect_Enable(){
+  HAL_UART_Receive_IT(LOG_HUARTX,(uint8_t*)&(GetConInfo()->rec),0x01);
+}
 /* HAL Receive dat Callback */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
   if(huart->Instance == LOG_USART){
     RecProcess(GetConInfo());
-    if(!GetConInfo()->Isclose){HAL_UART_Receive_IT(huart,(uint8_t*)&(GetConInfo()->rec),0x01);}
+    if(!GetConInfo()->Isclose){HAL_Connect_Enable();}
   }
 }
-/* HAL Receive dat Init */
-#define HAVEN_HAL_CONNECT_INIT
-void HAL_Connect_Init(){
-  HAL_UART_Receive_IT(LOG_HUARTX,(uint8_t*)&(GetConInfo()->rec),0x01);
-}
+
 /* Log Macro func */
 #define ConnectLog(format,...) printf(format,##__VA_ARGS__)
 #else

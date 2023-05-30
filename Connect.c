@@ -99,28 +99,28 @@ int RecProcess(ConInfo_t* port)
         i = (unsigned short)(port->FrameFormat.index_head + 1) % BUFF_SIZE;
         if (i != port->FrameFormat.index_tail) {
             switch ((int)port->FrameFormat.state) {
-            case STATE_IDLE: {
-                if (port->rec == port->FrameFormat.Head) {
-                    port->FrameFormat.state = STATE_REC;
-                }
-                else { port->FrameFormat.state = STATE_IDLE; }
-                break;
-            }
-            case STATE_REC: {
-                if (port->rec == port->FrameFormat.Tail) {
-                    port->FrameFormat.state = STATE_IDLE;
-                    if (port->User.hook) { port->User.hook(port); }
-                    port->FrameFormat.Len = 0;
-                    Fflush();
-                }
-                else if (port->rec != port->FrameFormat.Head) {
-                    port->FrameFormat.FrameBuff[port->FrameFormat.index_head] = port->rec;
-                    port->FrameFormat.index_head = i;
-                    port->FrameFormat.Len++;
-                    port->FrameFormat.state = STATE_REC;
-                }
-                break;
-            }
+              case STATE_IDLE: {
+                  if (port->rec == port->FrameFormat.Head) {
+                      port->FrameFormat.state = STATE_REC;
+                  }
+                  else { port->FrameFormat.state = STATE_IDLE; }
+                  break;
+              }
+              case STATE_REC: {
+                  if (port->rec == port->FrameFormat.Tail) {
+                      port->FrameFormat.state = STATE_IDLE;
+                      if (port->User.hook && port->FrameFormat.Len == Favailable()) { port->User.hook(port); }
+                      port->FrameFormat.Len = 0;
+                      Fflush();
+                  }
+                  else if (port->rec != port->FrameFormat.Head) {
+                      port->FrameFormat.FrameBuff[port->FrameFormat.index_head] = port->rec;
+                      port->FrameFormat.index_head = i;
+                      port->FrameFormat.Len++;
+                      port->FrameFormat.state = STATE_REC;
+                  }
+                  break;
+              }
             }
         }
         break;
@@ -151,7 +151,7 @@ void ConnectInit(Mode_t mode)
     Fflush();
     Sflush();
 #ifdef HAVEN_HAL_CONNECT_INIT
-    HAL_Connect_Init();
+    HAL_Connect_Enable();
 #else
     #error "Can't find HAL_Connect_Init(void) "
 #endif
@@ -175,7 +175,11 @@ void ConnectClose(void)
 void ConnectStart(void)
 {
     ConInfo.Isclose = CON_OPEN;
-    HAL_Connect_Init();
+#ifdef HAVEN_HAL_CONNECT_INIT
+    HAL_Connect_Enable();
+#else
+    #error "Can't find HAL_Connect_Init(void) "
+#endif
 }
 
 
