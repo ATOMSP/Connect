@@ -153,7 +153,7 @@ void ConnectInit(Mode_t mode)
 #ifdef HAVEN_HAL_CONNECT_INIT
     HAL_Connect_Enable();
 #else
-    #error "Can't find HAL_Connect_Init(void) "
+    #error "Can't find HAL_Connect_Enable(void) "
 #endif
     ConInfo.Isclose = CON_OPEN;
 }
@@ -178,7 +178,7 @@ void ConnectStart(void)
 #ifdef HAVEN_HAL_CONNECT_INIT
     HAL_Connect_Enable();
 #else
-    #error "Can't find HAL_Connect_Init(void) "
+    #error "Can't find HAL_Connect_Enable(void) "
 #endif
 }
 
@@ -217,3 +217,9 @@ void FrameSetFormat(unsigned char head, unsigned char tail)
     ConInfo.FrameFormat.Head = head;
     ConInfo.FrameFormat.Tail = tail;
 }
+
+
+
+
+
+
