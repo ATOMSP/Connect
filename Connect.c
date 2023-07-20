@@ -3,44 +3,35 @@
 #include "Con_port.h"
 #include <string.h>
 
-/* connect Info object */
-static ConInfo_t ConInfo;
 
-
-/**
- * @brief Get the ConInfo
- * @param  
-*/
-ConInfo_t * GetConInfo(void)
-{
-  return &ConInfo;
-}
 
 /**
  * @brief flush the frame buff
  * @param  
 */
-void Fflush(void)
+void Fflush(ConInfo_t *con)
 {
-    ConInfo.FrameFormat.index_head = ConInfo.FrameFormat.index_tail = BUFF_HEAD_INDEX;
+    con->FrameFormat.index_head = con->FrameFormat.index_tail = BUFF_HEAD_INDEX;
 }
 /**
  * @brief flush the stream buff
  * @param  
 */
-void Sflush(void)
+void Sflush(ConInfo_t *con)
 {
-    ConInfo.StreamFormat.index_head = ConInfo.StreamFormat.index_tail = BUFF_HEAD_INDEX;
+    con->StreamFormat.index_head = con->StreamFormat.index_tail = BUFF_HEAD_INDEX;
 }
+
+
 
 /**
  * @brief get available byte number in frame buff
  * @param  
  * @return 
 */
-int Favailable(void)
+int Favailable(ConInfo_t *con)
 {
-    return ((unsigned int)(BUFF_SIZE + ConInfo.FrameFormat.index_head - ConInfo.FrameFormat.index_tail)) % BUFF_SIZE;
+    return ((unsigned int)(BUFF_SIZE + con->FrameFormat.index_head - con->FrameFormat.index_tail)) % BUFF_SIZE;
 }
 
 /**
@@ -48,23 +39,23 @@ int Favailable(void)
  * @param  
  * @return 
 */
-int Savailable(void)
+int Savailable(ConInfo_t *con)
 {
-    return ((unsigned int)(BUFF_SIZE + ConInfo.StreamFormat.index_head - ConInfo.StreamFormat.index_tail)) % BUFF_SIZE;
+    return ((unsigned int)(BUFF_SIZE + con->StreamFormat.index_head - con->StreamFormat.index_tail)) % BUFF_SIZE;
 }
 /**
  * @brief read a byte in frame buff and len--
  * @param  
  * @return read byte Failed if -1
 */
-int Fread(void)
+int Fread(ConInfo_t *con)
 {
-    if (ConInfo.FrameFormat.index_head == ConInfo.FrameFormat.index_tail) {
+    if (con->FrameFormat.index_head == con->FrameFormat.index_tail) {
         return -1;
     }
     else {
-        unsigned char c = ConInfo.FrameFormat.FrameBuff[ConInfo.FrameFormat.index_tail];
-        ConInfo.FrameFormat.index_tail = (unsigned short)(ConInfo.FrameFormat.index_tail + 1) % BUFF_SIZE;
+        unsigned char c = con->FrameFormat.FrameBuff[con->FrameFormat.index_tail];
+        con->FrameFormat.index_tail = (unsigned short)(con->FrameFormat.index_tail + 1) % BUFF_SIZE;
         return c;
     }
 }
@@ -74,14 +65,14 @@ int Fread(void)
  * @param  
  * @return read byte Failed if -1
 */
-int Sread(void)
+int Sread(ConInfo_t *con)
 {
-    if (ConInfo.StreamFormat.index_head == ConInfo.StreamFormat.index_tail) {
+    if (con->StreamFormat.index_head == con->StreamFormat.index_tail) {
         return -1;
     }
     else {
-        unsigned char c = ConInfo.StreamFormat.StreamBuff[ConInfo.StreamFormat.index_tail];
-        ConInfo.StreamFormat.index_tail = (unsigned short)(ConInfo.StreamFormat.index_tail + 1) % BUFF_SIZE;
+        unsigned char c = con->StreamFormat.StreamBuff[con->StreamFormat.index_tail];
+        con->StreamFormat.index_tail = (unsigned short)(con->StreamFormat.index_tail + 1) % BUFF_SIZE;
         return c;
     }
 }
@@ -109,9 +100,9 @@ int RecProcess(ConInfo_t* port)
               case STATE_REC: {
                   if (port->rec == port->FrameFormat.Tail) {
                       port->FrameFormat.state = STATE_IDLE;
-                      if (port->User.hook && port->FrameFormat.Len == Favailable()) { port->User.hook(port); }
+                      if (port->User.hook && port->FrameFormat.Len == Favailable(port)) { port->User.hook(port); }
                       port->FrameFormat.Len = 0;
-                      Fflush();
+                      Fflush(port);
                   }
                   else if (port->rec != port->FrameFormat.Head) {
                       port->FrameFormat.FrameBuff[port->FrameFormat.index_head] = port->rec;
@@ -143,19 +134,20 @@ int RecProcess(ConInfo_t* port)
  * @brief Connect module Init 
 * @param mode : frame mode and stream mode 
 */
-void ConnectInit(Mode_t mode)
+void ConnectInit(ConInfo_t *con,Mode_t mode)
 {
-    memset(&ConInfo, 0, sizeof(ConInfo));
-    ConInfo.mode = mode;
-    ConInfo.FrameFormat.state = STATE_IDLE;
-    Fflush();
-    Sflush();
+    memset(con, 0, sizeof(ConInfo_t));
+    con->mode = mode;
+    con->FrameFormat.state = STATE_IDLE;
+    Fflush(con);
+    Sflush(con);
 #ifdef HAVEN_HAL_CONNECT_INIT
-    HAL_Connect_Enable();
+    // HAL_Connect_Enable();
+    // HAL_Connect_Enable_K210();
 #else
     #error "Can't find HAL_Connect_Enable(void) "
 #endif
-    ConInfo.Isclose = CON_OPEN;
+    con->Isclose = CON_OPEN;
 }
 
 
@@ -163,20 +155,21 @@ void ConnectInit(Mode_t mode)
  * @brief close the connect
  * @param  
 */
-void ConnectClose(void)
+void ConnectClose(ConInfo_t *con)
 {
-    ConInfo.Isclose = CON_CLOSE;
+    con->Isclose = CON_CLOSE;
 }
 
 /**
  * @brief open the connect
  * @param  
 */
-void ConnectStart(void)
+void ConnectStart(ConInfo_t *con)
 {
-    ConInfo.Isclose = CON_OPEN;
+    con->Isclose = CON_OPEN;
 #ifdef HAVEN_HAL_CONNECT_INIT
-    HAL_Connect_Enable();
+    // HAL_Connect_Enable();
+    // HAL_Connect_Enable_K210();
 #else
     #error "Can't find HAL_Connect_Enable(void) "
 #endif
@@ -187,11 +180,11 @@ void ConnectStart(void)
  * @brief stream mode test func so put it in the loop : example while(1) {StreamRunning();}
  * @param  
 */
-void StreamRunning(void)
+void StreamRunning(ConInfo_t *con)
 {
-    ConInfo.StreamFormat.Len = Savailable();
-    for (int i = 0; i < ConInfo.StreamFormat.Len; i++) {
-        ConnectLog("%c", (char)Sread());
+    con->StreamFormat.Len = Savailable(con);
+    for (int i = 0; i < con->StreamFormat.Len; i++) {
+        ConnectLog("%c", (char)Sread(con));
     }
 }
 
@@ -201,10 +194,10 @@ void StreamRunning(void)
  * @param func hook 
  * @param dat user dat
 */
-void FrameRecProFuncRegister(FrameReCpCallback func, void* dat)
+void FrameRecProFuncRegister(ConInfo_t *con,FrameReCpCallback func, void* dat)
 {
-    ConInfo.User.hook = func;
-    ConInfo.User.usrdat = dat;
+    con->User.hook = func;
+    con->User.usrdat = dat;
 }
 
 /**
@@ -212,10 +205,10 @@ void FrameRecProFuncRegister(FrameReCpCallback func, void* dat)
  * @param head frame head 
  * @param tail frame tail
 */
-void FrameSetFormat(unsigned char head, unsigned char tail)
+void FrameSetFormat(ConInfo_t *con,unsigned char head, unsigned char tail)
 {
-    ConInfo.FrameFormat.Head = head;
-    ConInfo.FrameFormat.Tail = tail;
+    con->FrameFormat.Head = head;
+    con->FrameFormat.Tail = tail;
 }
 
 

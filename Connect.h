@@ -67,19 +67,20 @@ typedef struct Connect_Info{
 
 /* Connect Module API */
 ConInfo_t * GetConInfo(void);
-void ConnectInit(Mode_t mode);
-void StreamRunning(void);
-void FrameRecProFuncRegister(FrameReCpCallback func,void * dat);
-void FrameSetFormat(unsigned char head,unsigned char tail);
+void ConnectInit(ConInfo_t * con,Mode_t mode);
+void StreamRunning(ConInfo_t * con);
+void FrameRecProFuncRegister(ConInfo_t * con,FrameReCpCallback func,void * dat);
+void FrameSetFormat(ConInfo_t * con,unsigned char head,unsigned char tail);
 /* */
-int  Favailable(void);
-int  Savailable(void);
-int  Fread(void);
-int  Sread(void);
-void Sflush(void);
-void Fflush(void);
+int  Favailable(ConInfo_t * con);
+int  Savailable(ConInfo_t * con);
+int  Fread(ConInfo_t * con);
+int  Sread(ConInfo_t * con);
+void Sflush(ConInfo_t * con);
+void Fflush(ConInfo_t * con);
 /* Put in Interrupt func use */
 int RecProcess(ConInfo_t * port);
+
 
 #ifdef __cplusplus
 }
